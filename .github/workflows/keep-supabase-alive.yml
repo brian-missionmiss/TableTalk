@@ -9,15 +9,20 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase
+      - name: Write ping to Supabase
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          # Insert a ping row — an actual write guarantees database activity
+          INSERT=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
             -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
-            "https://rjscdzpriwhgcukynnto.supabase.co/rest/v1/tt_store?limit=1")
-          echo "Supabase response: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "Warning: Supabase returned $STATUS"
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d '{"key":"tt_keepalive","value":"true","updated_at":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' \
+            "https://rjscdzpriwhgcukynnto.supabase.co/rest/v1/tt_store")
+          echo "Insert status: $INSERT"
+          if [ "$INSERT" != "201" ] && [ "$INSERT" != "200" ]; then
+            echo "Warning: unexpected status $INSERT"
             exit 1
           fi
           echo "Supabase is healthy."
