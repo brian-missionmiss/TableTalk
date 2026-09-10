@@ -1240,6 +1240,44 @@ async function showJourney(){
   show('s-journey');
 }
 
+// ── Swipe gesture support
+(function() {
+  let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+  const SWIPE_THRESHOLD = 50;   // min horizontal px to count as swipe
+  const SWIPE_MAX_Y    = 80;    // max vertical drift allowed
+  const SWIPE_MAX_TIME = 400;   // ms max gesture duration
+
+  function onTouchStart(e) {
+    touchStartX    = e.touches[0].clientX;
+    touchStartY    = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }
+
+  function onTouchEnd(e) {
+    // Only act when we're on the cards screen
+    if (!document.getElementById('s-cards').classList.contains('active')) return;
+
+    const dx   = e.changedTouches[0].clientX - touchStartX;
+    const dy   = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    const dt   = Date.now() - touchStartTime;
+
+    if (dt > SWIPE_MAX_TIME) return;       // too slow
+    if (dy > SWIPE_MAX_Y) return;          // too vertical (scrolling)
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return; // too short
+
+    if (dx < 0) {
+      // Swipe left → next card
+      nextCard();
+    } else {
+      // Swipe right → previous card
+      prevCard();
+    }
+  }
+
+  document.addEventListener('touchstart', onTouchStart, { passive: true });
+  document.addEventListener('touchend',   onTouchEnd,   { passive: true });
+})();
+
 // ── Utils
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 if('ontouchstart'in window){
